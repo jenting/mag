@@ -4,12 +4,12 @@ input:
       - nats://nats:4222
     stream: orders
     subject: orders.created
-    durable: redis-sink
+    durable: ${NATS_DURABLE}
 
 pipeline:
   processors:
     - mapping: |
-        root = if this.key != null && this.key != "" && this.value != null {
+        root = if (this.key | "") != "" && (this.value | "") != "" {
           { this.key: this.value }
         } else {
           deleted()
@@ -17,6 +17,6 @@ pipeline:
 
 output:
   redis_hash:
-    url: tcp://redis:6379
+    url: tcp://${REDIS_HOST}:6379
     key: orders-created-kv
     walk_json_object: true

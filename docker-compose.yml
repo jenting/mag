@@ -1,3 +1,12 @@
+x-redis-replica: &redis-replica
+  image: redis:latest
+
+x-connect-replica: &connect-replica
+  image: docker.redpanda.com/redpandadata/connect:latest
+  command: ["run", "/connect-replica.yaml"]
+  volumes:
+    - ./connect-replica.yaml:/connect-replica.yaml:ro
+
 services:
   nats:
     image: nats:latest
@@ -5,10 +14,110 @@ services:
     ports:
       - "4222:4222"
 
-  redis:
+  redis-primary:
     image: redis:latest
     ports:
       - "6379:6379"
+
+  redis-replica-1:
+    <<: *redis-replica
+    ports:
+      - "6380:6379"
+
+  redis-replica-2:
+    <<: *redis-replica
+    ports:
+      - "6381:6379"
+
+  redis-replica-3:
+    <<: *redis-replica
+    ports:
+      - "6382:6379"
+
+  redis-replica-4:
+    <<: *redis-replica
+    ports:
+      - "6383:6379"
+
+  redis-replica-5:
+    <<: *redis-replica
+    ports:
+      - "6384:6379"
+
+  redis-replica-6:
+    <<: *redis-replica
+    ports:
+      - "6385:6379"
+
+  redis-replica-7:
+    <<: *redis-replica
+    ports:
+      - "6386:6379"
+
+  redis-replica-8:
+    <<: *redis-replica
+    ports:
+      - "6387:6379"
+
+  redis-replica-9:
+    <<: *redis-replica
+    ports:
+      - "6388:6379"
+
+  redis-replica-10:
+    <<: *redis-replica
+    ports:
+      - "6389:6379"
+
+  redis-replica-11:
+    <<: *redis-replica
+    ports:
+      - "6390:6379"
+
+  redis-replica-12:
+    <<: *redis-replica
+    ports:
+      - "6391:6379"
+
+  redis-replica-13:
+    <<: *redis-replica
+    ports:
+      - "6392:6379"
+
+  redis-replica-14:
+    <<: *redis-replica
+    ports:
+      - "6393:6379"
+
+  redis-replica-15:
+    <<: *redis-replica
+    ports:
+      - "6394:6379"
+
+  redis-replica-16:
+    <<: *redis-replica
+    ports:
+      - "6395:6379"
+
+  redis-replica-17:
+    <<: *redis-replica
+    ports:
+      - "6396:6379"
+
+  redis-replica-18:
+    <<: *redis-replica
+    ports:
+      - "6397:6379"
+
+  redis-replica-19:
+    <<: *redis-replica
+    ports:
+      - "6398:6379"
+
+  redis-replica-20:
+    <<: *redis-replica
+    ports:
+      - "6399:6379"
 
   nats-init:
     image: natsio/nats-box:latest
@@ -24,16 +133,236 @@ services:
         nats --server nats://nats:4222 stream info orders >/dev/null 2>&1 || \
           nats --server nats://nats:4222 stream add orders --subjects orders.created --defaults
 
-  connect:
+  connect-publisher:
     image: docker.redpanda.com/redpandadata/connect:latest
-    command: ["run", "/connect.yaml"]
+    command: ["run", "/connect-publisher.yaml"]
     depends_on:
       nats-init:
         condition: service_completed_successfully
-      redis:
+      redis-primary:
         condition: service_started
     volumes:
-      - ./connect.yaml:/connect.yaml:ro
+      - ./connect-publisher.yaml:/connect-publisher.yaml:ro
+
+  connect-replica-1:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-1
+      NATS_DURABLE: redis-replica-1-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-1:
+        condition: service_started
+
+  connect-replica-2:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-2
+      NATS_DURABLE: redis-replica-2-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-2:
+        condition: service_started
+
+  connect-replica-3:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-3
+      NATS_DURABLE: redis-replica-3-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-3:
+        condition: service_started
+
+  connect-replica-4:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-4
+      NATS_DURABLE: redis-replica-4-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-4:
+        condition: service_started
+
+  connect-replica-5:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-5
+      NATS_DURABLE: redis-replica-5-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-5:
+        condition: service_started
+
+  connect-replica-6:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-6
+      NATS_DURABLE: redis-replica-6-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-6:
+        condition: service_started
+
+  connect-replica-7:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-7
+      NATS_DURABLE: redis-replica-7-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-7:
+        condition: service_started
+
+  connect-replica-8:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-8
+      NATS_DURABLE: redis-replica-8-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-8:
+        condition: service_started
+
+  connect-replica-9:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-9
+      NATS_DURABLE: redis-replica-9-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-9:
+        condition: service_started
+
+  connect-replica-10:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-10
+      NATS_DURABLE: redis-replica-10-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-10:
+        condition: service_started
+
+  connect-replica-11:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-11
+      NATS_DURABLE: redis-replica-11-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-11:
+        condition: service_started
+
+  connect-replica-12:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-12
+      NATS_DURABLE: redis-replica-12-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-12:
+        condition: service_started
+
+  connect-replica-13:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-13
+      NATS_DURABLE: redis-replica-13-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-13:
+        condition: service_started
+
+  connect-replica-14:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-14
+      NATS_DURABLE: redis-replica-14-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-14:
+        condition: service_started
+
+  connect-replica-15:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-15
+      NATS_DURABLE: redis-replica-15-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-15:
+        condition: service_started
+
+  connect-replica-16:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-16
+      NATS_DURABLE: redis-replica-16-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-16:
+        condition: service_started
+
+  connect-replica-17:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-17
+      NATS_DURABLE: redis-replica-17-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-17:
+        condition: service_started
+
+  connect-replica-18:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-18
+      NATS_DURABLE: redis-replica-18-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-18:
+        condition: service_started
+
+  connect-replica-19:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-19
+      NATS_DURABLE: redis-replica-19-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-19:
+        condition: service_started
+
+  connect-replica-20:
+    <<: *connect-replica
+    environment:
+      REDIS_HOST: redis-replica-20
+      NATS_DURABLE: redis-replica-20-sink
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis-replica-20:
+        condition: service_started
 
   nats-cli:
     image: natsio/nats-box:latest

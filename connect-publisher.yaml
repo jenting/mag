@@ -1,0 +1,12 @@
+input:
+  redis_streams:
+    url: tcp://redis-primary:6379
+    streams:
+      - orders
+    start_from_oldest: true
+
+output:
+  nats_jetstream:
+    urls:
+      - nats://nats:4222
+    subject: orders.created
