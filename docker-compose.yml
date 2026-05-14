@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  nats:
+    image: nats:2.10-alpine
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    command: "--jetstream --name nats-server -m 8222"
+
+  nats-setup:
+    image: natsio/nats-box:latest
+    depends_on:
+      - nats
+    command: >
+      sh -c "
+        sleep 2 &&
+        nats stream add test
+          --subjects=test
+          --storage=file
+          --retention=limits
+          --max-msgs=-1
+          --max-bytes=-1
+          --max-age=0
+          --max-msg-size=-1
+          --discard=old
+          --replicas=1
+          --server=nats://nats:4222
+          --defaults
+      "
+    restart: on-failure
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  benthos:
+    image: ghcr.io/benthosdev/benthos:4
+    volumes:
+      - ./benthos.yaml:/benthos.yaml
+    command: -c /benthos.yaml
+    depends_on:
+      - nats
+      - redis
+    restart: on-failure

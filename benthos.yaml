@@ -1,0 +1,14 @@
+input:
+  nats_jetstream:
+    urls:
+      - nats://nats:4222
+    subject: test
+    queue: benthos-queue
+    durable: benthos
+
+output:
+  redis_streams:
+    url: redis://redis:6379
+    stream: test
+    body_key: body
+    max_length: 0 # 0 = no trimming; set a positive integer to cap stream length in production
