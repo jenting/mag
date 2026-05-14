@@ -1,0 +1,22 @@
+input:
+  nats_jetstream:
+    urls:
+      - nats://nats:4222
+    stream: orders
+    subject: orders.created
+    durable: redis-replica-1-sink
+
+pipeline:
+  processors:
+    - mapping: |
+        root = if this.key != null && this.key != "" && this.value != null {
+          { this.key: this.value }
+        } else {
+          deleted()
+        }
+
+output:
+  redis_hash:
+    url: tcp://redis-replica-1:6379
+    key: orders-created-kv
+    walk_json_object: true

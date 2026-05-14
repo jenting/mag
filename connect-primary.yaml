@@ -4,7 +4,7 @@ input:
       - nats://nats:4222
     stream: orders
     subject: orders.created
-    durable: redis-sink
+    durable: redis-primary-sink
 
 pipeline:
   processors:
@@ -17,6 +17,6 @@ pipeline:
 
 output:
   redis_hash:
-    url: tcp://redis:6379
+    url: tcp://redis-primary:6379
     key: orders-created-kv
     walk_json_object: true
