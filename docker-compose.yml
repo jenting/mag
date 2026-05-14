@@ -1,0 +1,40 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+
+  nats:
+    image: nats:2.11-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  nats-init:
+    image: natsio/nats-box:0.15.0
+    depends_on:
+      - nats
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        until nats --server nats://nats:4222 stream info redis-events >/dev/null 2>&1; do
+          nats --server nats://nats:4222 stream add redis-events --subjects redis.events --storage file --retention limits --discard old --ack --defaults >/dev/null 2>&1 && break
+          sleep 2
+        done
+
+  vector:
+    build:
+      context: .
+      dockerfile: vector/Dockerfile
+    depends_on:
+      - redis
+      - nats
+      - nats-init
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_STREAM_KEY: redis.events
+      REDIS_STREAM_START_ID: 0-0

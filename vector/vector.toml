@@ -1,0 +1,15 @@
+[sources.redis_stream]
+type = "exec"
+mode = "streaming"
+command = ["/usr/local/bin/read_redis_stream.sh"]
+decoding.codec = "json"
+
+[sinks.nats_jetstream]
+type = "nats"
+inputs = ["redis_stream"]
+url = "nats://nats:4222"
+subject = "redis.events"
+encoding.codec = "json"
+
+[sinks.nats_jetstream.jetstream]
+enabled = true
