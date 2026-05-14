@@ -9,7 +9,11 @@ input:
 pipeline:
   processors:
     - mapping: |
-        root = { this.key: this.value }
+        root = if this.key.or("") != "" && this.value != null {
+          { this.key: this.value }
+        } else {
+          deleted()
+        }
 
 output:
   redis_hash:
