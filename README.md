@@ -26,7 +26,7 @@ docker compose run --rm nats-cli \
 docker compose exec redis redis-cli HGET orders-created-kv order:1
 ```
 
-You should see the value `created` (Redis CLI may render this as `created` or `"created"`).
+You should see the value `created` (Redis CLI may render it as created without quotes or as `"created"`).
 
 Publish an update with the same key:
 
@@ -41,4 +41,4 @@ Then verify again:
 docker compose exec redis redis-cli HGET orders-created-kv order:1
 ```
 
-You should now see `updated` (or `"updated"` in quoted CLI output).
+You should now see `updated` (without quotes, or `"updated"` in quoted CLI output).

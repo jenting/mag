@@ -9,7 +9,7 @@ input:
 pipeline:
   processors:
     - mapping: |
-        root = if this.key.or("") != "" && this.value != null {
+        root = if this.key != null && this.key != "" && this.value != null {
           { this.key: this.value }
         } else {
           deleted()
