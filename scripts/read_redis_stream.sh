@@ -8,7 +8,7 @@ REDIS_STREAM_KEY="${REDIS_STREAM_KEY:-redis.events}"
 LAST_ID="${REDIS_STREAM_START_ID:-0-0}"
 
 while true; do
-  RESPONSE="$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" --json XREAD BLOCK 1000 COUNT 1 STREAMS "$REDIS_STREAM_KEY" "$LAST_ID" 2>/dev/null || true)"
+  RESPONSE="$(redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT" --json XREAD BLOCK 1000 COUNT 10 STREAMS "$REDIS_STREAM_KEY" "$LAST_ID" 2>/dev/null || true)"
 
   if [ -z "$RESPONSE" ] || [ "$RESPONSE" = "null" ] || [ "$RESPONSE" = "(nil)" ]; then
     continue
@@ -21,5 +21,8 @@ while true; do
   fi
 
   printf '%s\n' "$EVENTS"
-  LAST_ID="$(printf '%s\n' "$EVENTS" | tail -n 1 | jq -r '.id')"
+  NEXT_ID="$(printf '%s\n' "$EVENTS" | tail -n 1 | jq -r '.id // empty')"
+  if [ -n "$NEXT_ID" ]; then
+    LAST_ID="$NEXT_ID"
+  fi
 done

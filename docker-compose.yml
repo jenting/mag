@@ -20,6 +20,8 @@ services:
     command:
       - -c
       - |
+        # If the stream already exists this loop exits immediately.
+        # Otherwise it keeps trying to create the stream until NATS is ready.
         until nats --server nats://nats:4222 stream info redis-events >/dev/null 2>&1; do
           nats --server nats://nats:4222 stream add redis-events --subjects redis.events --storage file --retention limits --discard old --ack --defaults >/dev/null 2>&1 && break
           sleep 2
