@@ -1,0 +1,42 @@
+services:
+  nats:
+    image: nats:latest
+    command: ["--js"]
+    ports:
+      - "4222:4222"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
+  nats-init:
+    image: natsio/nats-box:latest
+    depends_on:
+      - nats
+    entrypoint: /bin/sh
+    command:
+      - -ec
+      - |
+        until nats --server nats://nats:4222 stream ls >/dev/null 2>&1; do
+          sleep 1
+        done
+        nats --server nats://nats:4222 stream info orders >/dev/null 2>&1 || \
+          nats --server nats://nats:4222 stream add orders --subjects orders.created --defaults
+
+  connect:
+    image: docker.redpanda.com/redpandadata/connect:latest
+    command: ["run", "/connect.yaml"]
+    depends_on:
+      nats-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_started
+    volumes:
+      - ./connect.yaml:/connect.yaml:ro
+
+  nats-cli:
+    image: natsio/nats-box:latest
+    profiles: ["tools"]
+    depends_on:
+      - nats
