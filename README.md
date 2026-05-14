@@ -1,11 +1,11 @@
 # mag
 
-PoC for piping messages from NATS JetStream into Redis Streams with Redpanda Connect.
+PoC for piping messages from NATS JetStream into Redis hash key/value entries with Redpanda Connect.
 
 ## Files
 
 - `docker-compose.yml` starts NATS, Redis, Redpanda Connect, and initializes the NATS stream.
-- `connect.yaml` configures Redpanda Connect to read from NATS JetStream and write to Redis Streams.
+- `connect.yaml` configures Redpanda Connect to read from NATS JetStream and upsert fields in a Redis hash.
 
 ## Run the PoC
 
@@ -13,17 +13,32 @@ PoC for piping messages from NATS JetStream into Redis Streams with Redpanda Con
 docker compose up -d
 ```
 
-## Publish a message into NATS
+## Publish a key/value message into NATS
 
 ```bash
 docker compose run --rm nats-cli \
-  nats --server nats://nats:4222 pub orders.created '{"order_id":1,"status":"created"}'
+  nats --server nats://nats:4222 pub orders.created '{"key":"order:1","value":"created"}'
 ```
 
-## Verify the message in Redis
+## Verify create/update in Redis
 
 ```bash
-docker compose exec redis redis-cli XRANGE orders-created-stream - +
+docker compose exec redis redis-cli HGET orders-created-kv order:1
 ```
 
-You should see the published payload stored under the `body` field in the Redis stream entry.
+You should see the value `created` (Redis CLI may render it as created without quotes or as `"created"`).
+
+Publish an update with the same key:
+
+```bash
+docker compose run --rm nats-cli \
+  nats --server nats://nats:4222 pub orders.created '{"key":"order:1","value":"updated"}'
+```
+
+Then verify again:
+
+```bash
+docker compose exec redis redis-cli HGET orders-created-kv order:1
+```
+
+You should now see `updated` (without quotes, or `"updated"` in quoted CLI output).
