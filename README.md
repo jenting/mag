@@ -1,30 +1,37 @@
 # mag
 
-PoC for replicating Redis key/value entries across multiple Redis instances via NATS JetStream and Redpanda Connect.
+PoC for replicating Redis primary key/value entries to 20 Redis replicas via NATS JetStream and Redpanda Connect.
 
 ## Architecture
 
 ```
-Publisher
-    │
+[Application]
+    │  XADD orders * key <k> value <v>
     ▼
-NATS JetStream (stream: orders, subject: orders.created)
+redis-primary (port 6379)
     │
-    ├──► connect-primary  ──► redis-primary  (port 6379)
-    │
-    ├──► connect-replica-1 ──► redis-replica-1 (port 6380)
-    │
-    └──► connect-replica-2 ──► redis-replica-2 (port 6381)
+    └──► connect-publisher  (redis_streams → nats_jetstream)
+                │
+                ▼
+    NATS JetStream  (stream: orders, subject: orders.created)
+                │
+    ┌───────────┼────────────┐  ...  ┐
+    ▼           ▼            ▼       ▼
+connect-    connect-     connect-  connect-
+replica-1   replica-2    replica-3 ... replica-20
+    │           │            │           │
+redis-      redis-       redis-      redis-
+replica-1   replica-2    replica-3   replica-20
+(port 6380) (port 6381)  (port 6382) (port 6399)
 ```
 
-Each Redpanda Connect worker subscribes to the same NATS JetStream subject using its own durable consumer name, so every Redis instance independently receives and applies every message.
+`connect-publisher` reads entries from the `orders` Redis Stream on `redis-primary` and publishes them to the `orders.created` NATS JetStream subject. Each `connect-replica-N` uses its own durable NATS consumer (`redis-replica-N-sink`) so every replica independently receives all messages and writes them to its own Redis hash — true event-driven fan-out with no coupling between replicas.
 
 ## Files
 
-- `docker-compose.yml` starts NATS, three Redis instances (primary + 2 replicas), three Redpanda Connect workers, and initializes the NATS stream.
-- `connect-primary.yaml` configures Redpanda Connect to read from NATS JetStream and upsert fields in the primary Redis hash.
-- `connect-replica-1.yaml` configures Redpanda Connect to read from NATS JetStream and upsert fields in the first replica Redis hash.
-- `connect-replica-2.yaml` configures Redpanda Connect to read from NATS JetStream and upsert fields in the second replica Redis hash.
+- `docker-compose.yml` — starts NATS, redis-primary, 20 redis-replica services, connect-publisher, 20 connect-replica services, and the NATS stream initializer.
+- `connect-publisher.yaml` — Redpanda Connect pipeline: reads from the `orders` Redis Stream on redis-primary → publishes to NATS JetStream `orders.created`.
+- `connect-replica.yaml` — Redpanda Connect template (uses `${REDIS_HOST}` and `${NATS_DURABLE}` env vars): subscribes to NATS JetStream `orders.created` → upserts fields in a Redis hash on the target replica.
 
 ## Run the PoC
 
@@ -32,40 +39,28 @@ Each Redpanda Connect worker subscribes to the same NATS JetStream subject using
 docker compose up -d
 ```
 
-## Publish a key/value message into NATS
+## Publish a key/value entry to Redis primary
 
 ```bash
-docker compose run --rm nats-cli \
-  nats --server nats://nats:4222 pub orders.created '{"key":"order:1","value":"created"}'
+docker compose exec redis-primary redis-cli XADD orders '*' key order:1 value created
 ```
 
-## Verify replication across all Redis instances
+## Verify replication across replicas
 
-Check the primary:
+Check a sample of replicas (all should converge within a second):
 
 ```bash
-docker compose exec redis-primary redis-cli HGET orders-created-kv order:1
+docker compose exec redis-replica-1  redis-cli HGET orders-created-kv order:1
+docker compose exec redis-replica-10 redis-cli HGET orders-created-kv order:1
+docker compose exec redis-replica-20 redis-cli HGET orders-created-kv order:1
 ```
 
-Check replica 1:
+You should see `created` on every replica.
+
+Publish an update:
 
 ```bash
-docker compose exec redis-replica-1 redis-cli HGET orders-created-kv order:1
+docker compose exec redis-primary redis-cli XADD orders '*' key order:1 value updated
 ```
 
-Check replica 2:
-
-```bash
-docker compose exec redis-replica-2 redis-cli HGET orders-created-kv order:1
-```
-
-You should see the value `created` on all three instances.
-
-Publish an update with the same key:
-
-```bash
-docker compose run --rm nats-cli \
-  nats --server nats://nats:4222 pub orders.created '{"key":"order:1","value":"updated"}'
-```
-
-Then verify again on all three instances — all should show `updated`.
+Verify again — all replicas should show `updated`.
