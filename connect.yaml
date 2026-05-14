@@ -6,8 +6,13 @@ input:
     subject: orders.created
     durable: redis-sink
 
+pipeline:
+  processors:
+    - mapping: |
+        root = { this.key: this.value }
+
 output:
-  redis_streams:
+  redis_hash:
     url: tcp://redis:6379
-    stream: orders-created-stream
-    body_key: body
+    key: orders-created-kv
+    walk_json_object: true
